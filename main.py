@@ -74,8 +74,14 @@ class App():
         self.id=Entry(self.ventana)
         self.id.focus()
         self.id.pack(pady=5)
-        Button(self.ventana,text="Guardar",command=lambda: (self.eliminarController(),self.eliminarView())).pack(pady=10)
+        
+        self.btn_buscar=Button(self.ventana,text="Buscar",command=lambda: (self.buscar_Controller("eliminar")))
+        self.btn_buscar.pack(pady=10)
+
+        self.btn_eliminar=Button(self.ventana,text="Eliminar",state="disabled",command=lambda: (self.eliminarController(),self.eliminarView()))
+        self.btn_eliminar.pack(pady=10)
         Button(self.ventana,text="Regresar",command=self.menu_accionesView).pack(pady=10)
+
 
     def modificarView(self):
         self.borrarPantallaView()
@@ -108,8 +114,11 @@ class App():
         self.asientos=Entry(self.ventana)
         self.asientos.pack(pady=5)
 
-        Button(self.ventana,text="Guardar",command=lambda: (self.modificarController(),self.modificarView())).pack(pady=10)
-        Button(self.ventana,text="Regresar",command=self.menu_accionesView).pack(pady=10)
+        self.btn_buscar=Button(self.ventana,text="Buscar",command=lambda: (self.buscar_Controller("modificar")))
+        self.btn_buscar.pack(pady=5)
+        self.btn_modificar=Button(self.ventana,text="Modificar",state="disabled",command=lambda: (self.modificarController(),self.modificarView()))
+        self.btn_modificar.pack(pady=5)
+        Button(self.ventana,text="Regresar",command=self.menu_accionesView).pack(pady=5)
     
     def consultarView(self):
         self.borrarPantallaView()
@@ -119,6 +128,22 @@ class App():
         resultado_filas = self.consultarController(filas)
         Label(self.ventana, text=resultado_filas).pack(pady=5)
         Button(self.ventana,text="Regresar",command=self.menu_accionesView).pack(pady=10)
+    
+    def cambiar_estado_btn(self, estado, tipo):
+        if estado:
+            if tipo == "eliminar":
+                self.btn_eliminar.config(state="normal")
+            elif tipo == "modificar":
+                self.btn_modificar.config(state="normal")
+        else:
+            if tipo == "eliminar":
+                self.btn_eliminar.config(state="disabled")
+            elif tipo == "modificar":
+                self.btn_modificar.config(state="disabled")
+
+    def confirmacion(self, accion):
+        respuesta = messagebox.askyesno(title="Confirmación", message=f"¿Está seguro que desea {accion} el coche?")
+        return respuesta        
 
 ## Controladores
     def insertarController(self):
@@ -128,9 +153,13 @@ class App():
         del coche1
     def eliminarController(self):
         id = self.id.get()
-        respuesta=cochesBD.CochesBD.eliminar(id)
-        self.respuesta_sql(respuesta)
-    
+        resp= self.confirmacion("eliminar")
+        if resp:
+            respuesta=cochesBD.CochesBD.eliminar(id)
+        else:
+            respuesta=False
+            self.respuesta_sql(respuesta)
+
     def consultarController(self,filas):
             registros=cochesBD.CochesBD.consultar()
             if len(registros) > 0:
@@ -142,13 +171,23 @@ class App():
             else:
                filas="....:: Por el momento no existen registros :: ...."
             return filas
+    
     def modificarController(self):
         id = self.id.get()               
         coche1=cochesBD.CochesBD(self.marca.get(),self.color.get(),self.modelo.get(),self.velocidad.get(),self.potencia.get(),self.asientos.get())
         respuesta=coche1.actualizar(id)
         self.respuesta_sql(respuesta)
         del coche1
-
+    def buscar_Controller(self, tipo):
+        id = self.id.get()
+        coches1=cochesBD.CochesBD.buscar(id)
+        if len(coches1) > 0:
+            messagebox.showinfo(title="...Exitoso...", message="...Registro encontrado..." )
+            self.cambiar_estado_btn(True, tipo)
+            #if tipo == "modificar":
+        else:
+            messagebox.showerror(title="..Verifica por favor..", message="No se encontro el registro")
+            self.cambiar_estado_btn(False, tipo)
 
 
 if __name__ == "__main__":
